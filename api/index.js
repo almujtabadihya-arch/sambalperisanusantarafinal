@@ -1,6 +1,6 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
 
 const app = express();
 app.use(cors());
@@ -12,11 +12,15 @@ let isConnected = false;
 const connectDB = async () => {
   if (isConnected && mongoose.connection.readyState === 1) return;
   try {
-    if (!mongoURI) return;
-    await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 5000 });
+    if (!mongoURI) {
+      console.warn('⚠️ MONGO_URI is missing');
+      return;
+    }
+    await mongoose.connect(mongoURI);
     isConnected = true;
+    console.log('✅ MongoDB Connected');
   } catch (err) {
-    console.error('DB Connection Error:', err.message);
+    console.error('❌ MongoDB Error:', err.message);
   }
 };
 
@@ -25,14 +29,14 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// -- Safe Model Definition --
-const getMessageModel = () => mongoose.models.Message || mongoose.model('Message', new mongoose.Schema({
-  userId: String, text: String, sender: String, timestamp: { type: Date, default: Date.now }
-}));
-
+// -- Models --
 const getOrderModel = () => mongoose.models.Order || mongoose.model('Order', new mongoose.Schema({
   customer: Object, items: Array, totalAmount: Number, status: { type: String, default: 'Menunggu Pembayaran' }, 
   date: { type: Date, default: Date.now }, history: { type: Array, default: [] }
+}));
+
+const getMessageModel = () => mongoose.models.Message || mongoose.model('Message', new mongoose.Schema({
+  userId: String, text: String, sender: String, timestamp: { type: Date, default: Date.now }
 }));
 
 // -- Endpoints --
@@ -60,8 +64,8 @@ app.get('/api/orders', async (req, res) => {
 });
 
 app.post('/api/login', (req, res) => {
-  if (req.body.username === 'admin' && req.body.password === 'admin123') res.json({ token: 'BOSS_TOKEN' });
+  if (req.body.username === 'admin' && req.body.password === 'admin123') res.json({ token: 'OK' });
   else res.status(401).json({ error: 'Gagal' });
 });
 
-module.exports = app;
+export default app;
