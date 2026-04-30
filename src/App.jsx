@@ -14,7 +14,6 @@ export const AppContext = createContext();
 
 function App() {
   const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState(0);
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const location = useLocation();
@@ -22,9 +21,8 @@ function App() {
   const isAdminPage = location.pathname.includes('/admin');
   
   useEffect(() => {
-    const timer = setTimeout(() => setProgress(100), 50);
-    const finishTimer = setTimeout(() => setLoading(false), 1500);
-    return () => { clearTimeout(timer); clearTimeout(finishTimer); };
+    const timer = setTimeout(() => setLoading(false), 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   const [user, setUser] = useState(() => {
@@ -74,11 +72,8 @@ function App() {
       cart, addToCart, updateQty, removeFromCart, isCartOpen, setIsCartOpen, user, login, logout, setCart
     }}>
       {loading && (
-        <div className="splash-screen" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#000', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
-          <div style={{ fontSize: '2.5rem', fontWeight: '900', letterSpacing: '8px', marginBottom: '1.5rem' }}>SAMBAL PERISA</div>
-          <div style={{ width: '200px', height: '2px', background: 'rgba(255,255,255,0.1)', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', background: 'var(--primary)', width: `${progress}%`, transition: '0.5s' }}></div>
-          </div>
+        <div className="splash-screen" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#000', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ color: 'white', fontSize: '2rem', fontWeight: '900', letterSpacing: '8px' }}>SAMBAL PERISA</div>
         </div>
       )}
       
