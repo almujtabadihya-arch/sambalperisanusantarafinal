@@ -7,9 +7,9 @@ import tongkolImg from '../assets/tongkol_ngokol.png';
 import ayamImg from '../assets/ayam_suwir.png';
 
 const products = [
-  { id: 1, name: 'Sambal Ayam Suwir', theme: 'theme-ayam', price: 25000, volume: '150ml', image: ayamImg, description: 'Suwiran ayam melimpah dengan bumbu meresap sempurna.' },
+  { id: 1, name: 'Sambal Cumi Umami', theme: 'theme-cumi', price: 25000, volume: '150ml', image: cumiImg, description: 'Sensasi umami cumi kenyal dipadu pedas nampol.' },
   { id: 2, name: 'Sambal Tongkol Ngokol', theme: 'theme-tongkol', price: 25000, volume: '150ml', image: tongkolImg, description: 'Ikan tongkol segar yang melimpah di setiap suapan.' },
-  { id: 3, name: 'Sambal Cumi Umami', theme: 'theme-cumi', price: 25000, volume: '150ml', image: cumiImg, description: 'Sensasi umami cumi kenyal dipadu pedas nampol.' }
+  { id: 3, name: 'Sambal Ayam Suwir', theme: 'theme-ayam', price: 25000, volume: '150ml', image: ayamImg, description: 'Suwiran ayam melimpah dengan bumbu meresap sempurna.' }
 ];
 
 export default function Home() {
@@ -28,7 +28,7 @@ export default function Home() {
           </button>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <img src={products[1].image} alt="Hero" style={{ width: '80%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.15))' }} />
+          <img src={products[0].image} alt="Hero" style={{ width: '80%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.15))' }} />
         </div>
       </section>
 
@@ -41,8 +41,10 @@ export default function Home() {
         <div className="products-grid">
           {products.map(p => (
             <div key={p.id} className="product-card-premium" style={{ border: '1px solid #EEE' }}>
-              <img src={p.image} alt={p.name} onClick={() => setSelected(p)} style={{ cursor: 'pointer', width: '100%', borderRadius: '20px' }} />
-              <h3 style={{ marginTop: '1rem' }}>{p.name}</h3>
+              <div style={{ background: '#F9F9F9', borderRadius: '20px', padding: '1.5rem', marginBottom: '1rem' }}>
+                <img src={p.image} alt={p.name} onClick={() => setSelected(p)} style={{ cursor: 'pointer', width: '100%' }} />
+              </div>
+              <h3>{p.name}</h3>
               <p style={{ color: '#666', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{p.description}</p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--primary)' }}>Rp 25.000</span>
