@@ -6,7 +6,7 @@ import ChatWidget from './components/ChatWidget';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Checkout from './pages/Checkout';
-import Auth from './pages/Auth';
+import UserAuth from './pages/UserAuth';
 import OrderTracking from './pages/OrderTracking';
 import Admin from './pages/Admin';
 
@@ -71,7 +71,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/auth" element={<UserAuth />} />
           <Route path="/lacak" element={<OrderTracking />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
