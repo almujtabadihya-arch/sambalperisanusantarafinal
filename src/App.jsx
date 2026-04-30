@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext, useEffect } from 'react';
+import React, { useState, createContext, useContext } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import CartSidebar from './components/CartSidebar';
@@ -13,18 +13,12 @@ import Admin from './pages/Admin';
 export const AppContext = createContext();
 
 function App() {
-  const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const isAdminPage = location.pathname.includes('/admin');
   
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, []);
-
   const [user, setUser] = useState(() => {
     try {
       const savedUser = localStorage.getItem('sambalUser');
@@ -58,7 +52,7 @@ function App() {
   const login = (userData) => {
     setUser(userData);
     localStorage.setItem('sambalUser', JSON.stringify(userData));
-    navigate('/checkout');
+    navigate('/');
   };
 
   const logout = () => {
@@ -71,15 +65,9 @@ function App() {
     <AppContext.Provider value={{
       cart, addToCart, updateQty, removeFromCart, isCartOpen, setIsCartOpen, user, login, logout, setCart
     }}>
-      {loading && (
-        <div className="splash-screen" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#000', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ color: 'white', fontSize: '2rem', fontWeight: '900', letterSpacing: '8px' }}>SAMBAL PERISA</div>
-        </div>
-      )}
-      
       {!isAdminPage && <Navbar />}
       
-      <main className={isAdminPage ? "" : "container"}>
+      <main className={isAdminPage ? "" : "container"} style={{ minHeight: '80vh' }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/checkout" element={<Checkout />} />
