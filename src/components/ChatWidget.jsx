@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, X } from 'lucide-react';
+import { MessageCircle, Send, X, MessageSquare } from 'lucide-react';
+import { io } from 'socket.io-client';
+
+// Connect to local server
+const socket = io('http://localhost:5000');
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,96 +20,88 @@ export default function ChatWidget() {
   });
 
   const messagesEndRef = useRef(null);
-  const isOpenRef = useRef(isOpen);
 
   useEffect(() => {
-    isOpenRef.current = isOpen;
-    if (isOpen) setUnreadCount(0);
-  }, [isOpen]);
+    // Join private room
+    socket.emit('join_chat', userId);
 
-  // -- Polling Messages (Level Dewa) --
-  useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const res = await fetch(`/api/messages/${userId}`);
-        const data = await res.json();
-        
-        if (data.length > messages.length) {
-          if (!isOpenRef.current) {
-            setUnreadCount(prev => prev + (data.length - messages.length));
-          }
-          setMessages(data);
-        }
-      } catch (err) {
-        console.error('Chat error:', err);
+    // Load history
+    socket.on('chat_history', (history) => {
+      setMessages(history);
+    });
+
+    // Receive message
+    socket.on('receive_message', (msg) => {
+      setMessages((prev) => [...prev, msg]);
+      if (!isOpen) {
+        setUnreadCount((prev) => prev + 1);
       }
+    });
+
+    return () => {
+      socket.off('chat_history');
+      socket.off('receive_message');
     };
-
-    fetchMessages(); // Initial fetch
-    const interval = setInterval(fetchMessages, 3000); // Poll every 3 seconds
-
-    return () => clearInterval(interval);
-  }, [userId, messages.length]);
+  }, [userId, isOpen]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isOpen]);
+    if (isOpen) {
+      setUnreadCount(0);
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isOpen, messages]);
 
-  const handleSend = async (e) => {
+  const handleSend = (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const newMessage = {
+    const data = {
       userId,
       text: input.trim(),
-      sender: 'user',
-      timestamp: new Date()
+      sender: 'user'
     };
 
-    try {
-      await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMessage)
-      });
-      setInput('');
-      // Immediately fetch after sending
-      const res = await fetch(`/api/messages/${userId}`);
-      const data = await res.json();
-      setMessages(data);
-    } catch (err) {
-      alert('Gagal mengirim pesan.');
-    }
+    socket.emit('send_message', data);
+    setInput('');
   };
 
   return (
     <div className="chat-widget">
+      {/* Floating Button */}
+      {!isOpen && (
+        <button className="chat-btn" onClick={() => setIsOpen(true)}>
+          <MessageSquare size={32} />
+          {unreadCount > 0 && <span className="cart-badge" style={{top: '-5px', right: '-5px'}}>{unreadCount}</span>}
+        </button>
+      )}
+
+      {/* Chat Window */}
       <div className={`chat-window ${isOpen ? 'open' : ''}`}>
         <div className="chat-header">
-          <MessageCircle size={24} />
-          <div style={{flex: 1}}>
-            <h4 style={{margin: 0, fontSize: '1.1rem'}}>Admin Sambal</h4>
-            <span style={{fontSize: '0.8rem', opacity: 0.8}}>Online</span>
+          <div style={{display: 'flex', alignItems: 'center', gap: '0.8rem'}}>
+            <div style={{width: '10px', height: '10px', background: '#4CAF50', borderRadius: '50%'}}></div>
+            <div>
+              <div style={{fontWeight: 800, fontSize: '0.9rem'}}>Admin Sambal</div>
+              <div style={{fontSize: '0.7rem', opacity: 0.8}}>Online</div>
+            </div>
           </div>
           <button style={{background:'none', border:'none', color:'white', cursor:'pointer'}} onClick={() => setIsOpen(false)}>
             <X size={20} />
           </button>
         </div>
-        
+
         <div className="chat-body">
-          <div style={{display: 'flex', flexDirection: 'column'}}>
-            {messages.length === 0 && (
-              <div style={{textAlign: 'center', color: '#888', marginTop: '2rem', fontSize: '0.8rem'}}>
-                Halo! Ada yang bisa kami bantu?
-              </div>
-            )}
-            {messages.map((msg, i) => (
-              <div key={i} className={`chat-message ${msg.sender === 'admin' ? 'msg-seller' : 'msg-user'}`}>
-                {msg.text}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
+          {messages.length === 0 && (
+            <div style={{textAlign: 'center', color: '#999', marginTop: '2rem', fontSize: '0.8rem'}}>
+              Halo! Ada yang bisa kami bantu seputar Sambal Perisa? 🌶️
+            </div>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={`chat-message ${msg.sender === 'admin' ? 'msg-seller' : 'msg-user'}`}>
+              {msg.text}
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
         </div>
 
         <form className="chat-input-area" onSubmit={handleSend}>
@@ -120,17 +116,6 @@ export default function ChatWidget() {
           </button>
         </form>
       </div>
-
-      {!isOpen && (
-        <button className="chat-btn" onClick={() => setIsOpen(true)} style={{ position: 'relative' }}>
-          <MessageCircle size={30} />
-          {unreadCount > 0 && (
-            <span className="cart-badge" style={{ top: '-10px', right: '-10px' }}>
-              {unreadCount}
-            </span>
-          )}
-        </button>
-      )}
     </div>
   );
 }
