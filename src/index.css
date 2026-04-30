@@ -22,41 +22,39 @@ body { background-color: var(--bg); color: var(--text); overflow-x: hidden; min-
 
 .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
 
-/* Navbar Fix */
+/* Top Promo Bar */
+.promo-bar { background: #000; color: #FFF; text-align: center; padding: 0.5rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 2px; }
+
+/* Navbar */
 .navbar { position: sticky; top: 0; z-index: 9999; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 0.8rem 0; }
-.navbar-container { display: flex; justify-content: space-between; align-items: center; }
-.navbar-brand { display: flex; align-items: center; gap: 0.8rem; cursor: pointer; text-decoration: none; }
 .navbar-brand img { height: 45px !important; width: auto !important; object-fit: contain; }
 .navbar-brand span { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
 
-/* Hero Section */
+/* Hero */
 .hero-section { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 4rem; padding: 6rem 0; align-items: center; }
 .hero-title { font-size: 4.5rem; font-weight: 900; line-height: 1; margin-bottom: 2rem; color: #000; letter-spacing: -2px; }
-.hero-subtitle { font-size: 1.2rem; color: var(--text-light); margin-bottom: 3rem; max-width: 500px; }
 
-/* Products */
-.products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem; padding: 4rem 0; }
+/* Testimonials */
+.testi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 4rem; }
+.testi-card { background: white; padding: 2rem; border-radius: 24px; border: 1px solid #EEE; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+.testi-text { font-style: italic; color: #555; margin-bottom: 1.5rem; font-size: 0.95rem; }
+.testi-author { font-weight: 800; font-size: 0.9rem; color: var(--primary); }
+
+/* Newsletter */
+.newsletter { background: #000; border-radius: 40px; padding: 4rem; text-align: center; color: white; margin: 6rem 0; }
+.news-input-group { display: flex; max-width: 500px; margin: 2rem auto 0; gap: 1rem; }
+.news-input { flex: 1; padding: 1rem 1.5rem; border-radius: 99px; border: none; outline: none; }
+
+/* Product Cards */
 .product-card-premium { background: white; border-radius: 40px; padding: 2.5rem; text-align: center; border: 1px solid #F0F0F0; transition: var(--transition); }
-.product-card-premium:hover { transform: translateY(-15px); box-shadow: 0 40px 80px rgba(0,0,0,0.1); }
 .product-card-premium img { width: 100%; max-height: 220px; object-fit: contain; margin-bottom: 2rem; }
 
-/* Modal Detail */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 2rem; backdrop-filter: blur(10px); }
-.modal-content { background: white; border-radius: 40px; width: 100%; max-width: 1000px; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; animation: modalIn 0.5s var(--transition); }
-@keyframes modalIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+/* Footer */
+.footer { background: #000; color: white; padding: 6rem 0 3rem; border-radius: 60px 60px 0 0; }
 
-/* Buttons */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.8rem; padding: 0.9rem 2.2rem; font-weight: 800; border-radius: 99px; cursor: pointer; transition: 0.3s; text-decoration: none; border: none; }
-.btn-primary { background: #000; color: white; }
-.btn-primary:hover { background: var(--primary); transform: translateY(-3px); }
-.btn-outline { background: transparent; border: 2px solid #EEE; color: #333; }
-
-/* Animations */
-.section-reveal { opacity: 0; transform: translateY(30px); transition: 1s var(--transition); }
-.section-reveal.active { opacity: 1; transform: translateY(0); }
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
 @media (max-width: 1000px) {
-  .hero-section, .modal-content, .food-pairing-card { grid-template-columns: 1fr; }
-  .hero-title { font-size: 3rem; }
-  .navbar-brand span { display: none; }
+  .hero-section, .testi-grid { grid-template-columns: 1fr; }
+  .news-input-group { flex-direction: column; border-radius: 20px; }
 }
