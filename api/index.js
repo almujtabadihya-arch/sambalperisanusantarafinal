@@ -34,6 +34,15 @@ const getMessageModel = () => mongoose.models.Message || mongoose.model('Message
 }));
 
 // -- Endpoints --
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === 'admin' && password === 'admin123') {
+    res.json({ token: 'mock-admin-token-123' });
+  } else {
+    res.status(401).json({ error: 'Username atau password salah!' });
+  }
+});
+
 app.post('/api/userlogin', (req, res) => {
   res.json({ user: { name: req.body.email.split('@')[0], email: req.body.email } });
 });
@@ -71,6 +80,19 @@ app.post('/api/messages', async (req, res) => {
 
 app.get('/api/messages/:userId', async (req, res) => {
   try { res.json(await getMessageModel().find({ userId: req.params.userId })); } catch (err) { res.json([]); }
+});
+
+// Admin list chats
+app.get('/api/messages/admin/list', async (req, res) => {
+  try {
+    const messages = await getMessageModel().find().sort({ timestamp: 1 });
+    const chats = {};
+    messages.forEach(m => {
+      if (!chats[m.userId]) chats[m.userId] = [];
+      chats[m.userId].push(m);
+    });
+    res.json(chats);
+  } catch (err) { res.json({}); }
 });
 
 export default app;
