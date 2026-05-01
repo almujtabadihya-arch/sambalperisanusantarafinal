@@ -3,7 +3,6 @@ import { MessageCircle, Send, X } from 'lucide-react';
 import { AppContext } from '../App';
 import { io } from 'socket.io-client';
 
-// Smart URL Detection
 const getSocketUrl = () => {
     if (window.location.hostname === 'localhost') return 'http://localhost:5000';
     return window.location.origin;
@@ -16,30 +15,30 @@ export default function ChatWidget() {
   const [input, setInput] = useState('');
   const [socket, setSocket] = useState(null);
   const scrollRef = useRef(null);
+  const isHistoryLoaded = useRef(false);
 
   const [tempId] = useState('user-' + Math.random().toString(36).substring(2, 9));
   const currentUserId = user?.email || tempId;
   const baseUrl = getSocketUrl();
 
   useEffect(() => {
-    const newSocket = io(baseUrl, { 
-        transports: ['websocket', 'polling'],
-        reconnection: true
-    });
+    const newSocket = io(baseUrl, { transports: ['websocket', 'polling'] });
     setSocket(newSocket);
 
     newSocket.emit('join_chat', currentUserId);
 
-    // Ambil history chat
-    fetch(`${baseUrl}/api/messages/${currentUserId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setMessages(data);
-      })
-      .catch(() => {});
+    // Ambil history HANYA SEKALI
+    if (!isHistoryLoaded.current) {
+        fetch(`${baseUrl}/api/messages/${currentUserId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (Array.isArray(data)) setMessages(data);
+            isHistoryLoaded.current = true;
+          })
+          .catch(() => {});
+    }
 
     newSocket.on('receive_message', (msg) => {
-      // Hanya tambah kalau ID berbeda (biar nggak dobel pas kita send sendiri)
       setMessages(prev => {
           const exists = prev.find(p => p.timestamp === msg.timestamp && p.text === msg.text);
           if (exists) return prev;
@@ -51,11 +50,7 @@ export default function ChatWidget() {
   }, [currentUserId, baseUrl]);
 
   useEffect(() => {
-    if (isOpen) {
-        setTimeout(() => {
-            scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-    }
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
   const handleSend = async (e) => {
@@ -75,7 +70,7 @@ export default function ChatWidget() {
     setInput('');
 
     // Kirim ke Socket
-    if (socket && socket.connected) {
+    if (socket) {
         socket.emit('send_message', msgData);
     }
 
