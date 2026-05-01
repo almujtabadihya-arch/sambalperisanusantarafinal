@@ -1,48 +1,43 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { LogOut, Package, MessageCircle, Send, CheckCircle, Clock, Truck, ShoppingBag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingBag, MessageSquare, Clock, Package, CheckCircle, Truck, AlertCircle, LogOut } from 'lucide-react';
 
 export default function Admin() {
-  const [token, setToken] = useState(localStorage.getItem('adminToken'));
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [orders, setOrders] = useState([]);
-  
-  // -- Chat States --
-  const [allChats, setAllChats] = useState({});
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [chatInput, setChatInput] = useState('');
+  const [chats, setChats] = useState({});
+  const [activeTab, setActiveTab] = useState('orders');
+  const [loading, setLoading] = useState(false);
 
-  const chatEndRef = useRef(null);
-
-  // -- Initialization & Polling --
   useEffect(() => {
-    if (token) {
+    const token = localStorage.getItem('adminToken');
+    if (token) setIsLoggedIn(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn) {
       fetchOrders();
       fetchChats();
-      
-      const orderInterval = setInterval(fetchOrders, 10000); // Poll orders every 10s
-      const chatInterval = setInterval(fetchChats, 3000);   // Poll chats every 3s
-      
-      return () => {
-        clearInterval(orderInterval);
-        clearInterval(chatInterval);
-      };
+      const interval = setInterval(() => {
+        fetchOrders();
+        fetchChats();
+      }, 5000);
+      return () => clearInterval(interval);
     }
-  }, [token]);
+  }, [isLoggedIn]);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [allChats, selectedUser]);
-
-
-  // -- API Calls --
   const fetchOrders = async () => {
     try {
       const res = await fetch('/api/orders');
       const data = await res.json();
-      setOrders(data);
+      if (Array.isArray(data)) {
+        setOrders(data);
+      } else {
+        setOrders([]);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Fetch Orders Error:', err);
     }
   };
 
@@ -50,216 +45,140 @@ export default function Admin() {
     try {
       const res = await fetch('/api/messages/admin/list');
       const data = await res.json();
-      setAllChats(data);
-    } catch (err) {
-      console.error(err);
+      if (data && typeof data === 'object') {
+        setChats(data);
+      }
+    } catch (err) {}
+  };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (username === 'admin' && password === 'admin123') {
+      localStorage.setItem('adminToken', 'true');
+      setIsLoggedIn(true);
+    } else {
+      alert('Login Gagal!');
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    setIsLoggedIn(false);
   };
 
   const updateStatus = async (id, newStatus) => {
-    const notes = prompt("Tambahkan catatan update logistik (opsional):", "Pesanan sedang diproses.");
+    const notes = prompt("Catatan Logistik:", `Pesanan dalam status ${newStatus}`);
     try {
-      await fetch(`/api/orders/${id}`, {
+      const res = await fetch(`/api/orders/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus, notes: notes || 'Status diperbarui oleh Admin.' })
+        body: JSON.stringify({ status: newStatus, notes: notes || 'Update status oleh Admin.' })
       });
-      fetchOrders(); 
+      if (res.ok) fetchOrders();
     } catch (err) {
-      alert('Gagal mengubah status');
+      alert('Gagal update');
     }
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setToken(data.token);
-        localStorage.setItem('adminToken', data.token);
-      } else alert(data.error);
-    } catch (err) {
-      alert('Gagal terhubung ke Server.');
-    }
-  };
-
-  const handleSendChat = async (e) => {
-    e.preventDefault();
-    if (!chatInput.trim() || !selectedUser) return;
-
-    const newMessage = {
-      userId: selectedUser,
-      text: chatInput.trim(),
-      sender: 'admin',
-      timestamp: new Date()
-    };
-
-    try {
-      await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMessage)
-      });
-      setChatInput('');
-      fetchChats();
-    } catch (err) {
-      alert('Gagal membalas pesan.');
-    }
-  };
-
-  if (!token) {
+  if (!isLoggedIn) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', padding: '2rem' }}>
-        <form onSubmit={handleLogin} style={{ background: '#fff', padding: '3rem', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', width: '100%', maxWidth: '450px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-             <h2 style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--primary)' }}>Admin Central</h2>
-             <p style={{ color: '#888' }}>Masuk untuk mengelola pesanan & chat.</p>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Username</label>
-            <input type="text" className="form-input" required value={username} onChange={e => setUsername(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <input type="password" className="form-input" required value={password} onChange={e => setPassword(e.target.value)} />
-          </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '1rem' }}>MASUK SEKARANG</button>
-        </form>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', padding: '20px' }}>
+        <div style={{ background: 'white', padding: '40px', borderRadius: '20px', width: '100%', maxWidth: '400px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+          <h2 style={{ textAlign: 'center', marginBottom: '30px', fontWeight: '900' }}>ADMIN LOGIN</h2>
+          <form onSubmit={handleLogin}>
+            <input type="text" placeholder="Username" style={{ width: '100%', padding: '15px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #ddd' }} value={username} onChange={e => setUsername(e.target.value)} required />
+            <input type="password" placeholder="Password" style={{ width: '100%', padding: '15px', marginBottom: '25px', borderRadius: '10px', border: '1px solid #ddd' }} value={password} onChange={e => setPassword(e.target.value)} required />
+            <button type="submit" style={{ width: '100%', padding: '15px', background: 'black', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>MASUK SEKARANG</button>
+          </form>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', minHeight: '100vh', background: '#f9f9f9', gap: '2rem', padding: '2rem' }}>
-      
-      {/* 1. Manajemen Pesanan */}
-      <div style={{ background: '#fff', borderRadius: '32px', padding: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2 style={{ fontWeight: '900', fontSize: '1.8rem' }}>Manajemen Pesanan</h2>
-          <button onClick={() => { setToken(null); localStorage.removeItem('adminToken'); }} className="btn btn-outline" style={{ padding: '0.6rem 1.2rem' }}>
-            <LogOut size={18} /> Keluar
-          </button>
-        </div>
-        
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #EEE' }}>
-                <th style={{ padding: '1rem' }}>Pelanggan</th>
-                <th style={{ padding: '1rem' }}>Produk</th>
-                <th style={{ padding: '1rem' }}>Total</th>
-                <th style={{ padding: '1rem' }}>Status</th>
-                <th style={{ padding: '1rem' }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map(o => (
-                <tr key={o.id} style={{ borderBottom: '1px solid #F5F5F5' }}>
-                   <td style={{ padding: '1.2rem 1rem' }}>
-                     <div style={{ fontWeight: '700' }}>{o.customer.name}</div>
-                     <div style={{ fontSize: '0.8rem', color: '#888' }}>{o.id.substring(0,8)}...</div>
-                   </td>
-                   <td style={{ padding: '1rem' }}>
-                     {o.items.map(item => <div key={item.id} style={{fontSize:'0.85rem'}}>{item.name} x{item.qty}</div>)}
-                   </td>
-                   <td style={{ padding: '1rem', fontWeight: '800', color: 'var(--primary)' }}>
-                     Rp {o.totalAmount.toLocaleString('id-ID')}
-                   </td>
-                   <td style={{ padding: '1rem' }}>
-                     <span style={{ 
-                        padding: '0.3rem 0.8rem', 
-                        borderRadius: '99px', 
-                        background: 'rgba(255, 152, 0, 0.1)', 
-                        color: '#FF9800', 
-                        fontSize: '0.75rem', 
-                        fontWeight: '800' 
-                      }}>
-                       {o.status}
-                     </span>
-                   </td>
-                   <td style={{ padding: '1rem' }}>
-                      <select 
-                        style={{ padding: '0.4rem', borderRadius: '8px', border: '1px solid #DDD', fontSize: '0.8rem' }}
-                        value={o.status} 
-                        onChange={(e) => updateStatus(o.id, e.target.value)}
-                      >
-                        <option value="Menunggu Pembayaran">Menunggu</option>
-                        <option value="Sedang Diproses">Diproses</option>
-                        <option value="Sedang Dikemas">Dikemas</option>
-                        <option value="Sedang Kurir / Dikirim">Dikirim</option>
-                        <option value="Selesai">Selesai</option>
-                      </select>
-                   </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+    <div style={{ minHeight: '100vh', background: '#f8f9fa' }}>
+      {/* Sidebar / Header */}
+      <div style={{ background: 'black', color: 'white', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ fontSize: '1.2rem', fontWeight: '900' }}>SAMBAL PERISA - ADMIN</h1>
+        <button onClick={handleLogout} style={{ background: 'transparent', border: '1px solid #555', color: 'white', padding: '5px 15px', borderRadius: '5px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <LogOut size={16} /> Keluar
+        </button>
       </div>
 
-      {/* 2. Live Chat Panel */}
-      <div style={{ background: '#fff', borderRadius: '32px', padding: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column' }}>
-        <h2 style={{ fontWeight: '900', fontSize: '1.8rem', marginBottom: '1.5rem' }}>Live Chat</h2>
-        
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-          {Object.keys(allChats).map(uid => (
-             <button 
-                key={uid} 
-                onClick={() => setSelectedUser(uid)}
-                style={{
-                  padding: '0.6rem 1rem',
-                  background: selectedUser === uid ? 'var(--primary)' : '#F5F5F5',
-                  color: selectedUser === uid ? '#fff' : '#666',
-                  border: 'none', borderRadius: '12px', cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: '700', fontSize: '0.85rem'
-                }}
-             >
-               {uid.substring(0, 8)}...
-             </button>
-          ))}
+      <div style={{ display: 'flex', maxWidth: '1400px', margin: '0 auto', padding: '20px', gap: '20px' }}>
+        {/* Tab Selector */}
+        <div style={{ width: '250px' }}>
+          <div onClick={() => setActiveTab('orders')} style={{ padding: '15px', background: activeTab === 'orders' ? 'black' : 'white', color: activeTab === 'orders' ? 'white' : 'black', borderRadius: '12px', cursor: 'pointer', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+            <ShoppingBag size={20} /> Pesanan Masuk
+          </div>
+          <div onClick={() => setActiveTab('chats')} style={{ padding: '15px', background: activeTab === 'chats' ? 'black' : 'white', color: activeTab === 'chats' ? 'white' : 'black', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+            <MessageSquare size={20} /> Chat Pelanggan
+          </div>
         </div>
 
-        <div style={{ flex: 1, background: '#F9F9F9', borderRadius: '24px', padding: '1.5rem', overflowY: 'auto', marginBottom: '1.5rem' }}>
-          {!selectedUser ? (
-            <div style={{ textAlign: 'center', color: '#888', marginTop: '40%' }}>
-              <MessageCircle size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-              <p>Pilih chat untuk membalas.</p>
+        {/* Content Area */}
+        <div style={{ flex: 1 }}>
+          {activeTab === 'orders' ? (
+            <div style={{ display: 'grid', gap: '15px' }}>
+              {orders.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', background: 'white', borderRadius: '20px', color: '#888' }}>
+                  <Package size={48} style={{ marginBottom: '10px', opacity: 0.3 }} />
+                  <p>Belum ada pesanan masuk hari ini.</p>
+                </div>
+              ) : (
+                orders.map((order) => (
+                  <div key={order.id || order._id} style={{ background: 'white', padding: '20px', borderRadius: '20px', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', border: '1px solid #eee' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #f0f0f0', paddingBottom: '10px' }}>
+                      <div>
+                        <div style={{ fontWeight: '900', color: 'var(--primary)' }}>{order.orderId}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#888' }}>{new Date(order.date).toLocaleString()}</div>
+                      </div>
+                      <div style={{ padding: '5px 15px', background: '#FFF3E0', color: '#E65100', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                        {order.status}
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div>
+                        <p style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#888', marginBottom: '5px' }}>PEMBELI:</p>
+                        <p style={{ fontWeight: 'bold' }}>{order.customer?.name}</p>
+                        <p style={{ fontSize: '0.9rem' }}>WA: {order.customer?.whatsapp}</p>
+                        <p style={{ fontSize: '0.8rem', color: '#666' }}>{order.customer?.address}</p>
+                      </div>
+                      <div>
+                        <p style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#888', marginBottom: '5px' }}>DETAIL PESANAN:</p>
+                        {order.items?.map((item, i) => (
+                          <div key={i} style={{ fontSize: '0.9rem' }}>{item.name} x {item.quantity}</div>
+                        ))}
+                        <p style={{ fontWeight: '900', marginTop: '10px', fontSize: '1.1rem' }}>Total: Rp {order.totalAmount?.toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                      <button onClick={() => updateStatus(order.id, 'Diproses')} style={{ flex: 1, padding: '10px', background: '#E3F2FD', color: '#1565C0', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>PROSES</button>
+                      <button onClick={() => updateStatus(order.id, 'Dikirim')} style={{ flex: 1, padding: '10px', background: '#F3E5F5', color: '#7B1FA2', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>KIRIM</button>
+                      <button onClick={() => updateStatus(order.id, 'Selesai')} style={{ flex: 1, padding: '10px', background: '#E8F5E9', color: '#2E7D32', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>SELESAI</button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           ) : (
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-               {allChats[selectedUser]?.map((msg, i) => (
-                  <div key={i} style={{ 
-                    alignSelf: msg.sender === 'admin' ? 'flex-end' : 'flex-start',
-                    background: msg.sender === 'admin' ? 'var(--text)' : '#FFF',
-                    color: msg.sender === 'admin' ? '#FFF' : 'var(--text)',
-                    padding: '0.8rem 1.2rem', borderRadius: '20px', maxWidth: '85%',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.02)', fontSize: '0.95rem'
-                  }}>
-                    {msg.text}
-                  </div>
-               ))}
-               <div ref={chatEndRef} />
-             </div>
+            <div style={{ background: 'white', padding: '20px', borderRadius: '20px', minHeight: '400px' }}>
+               <h2 style={{ marginBottom: '20px' }}>Live Chat Admin</h2>
+               {Object.keys(chats).length === 0 ? (
+                 <p style={{ color: '#888' }}>Belum ada chat masuk.</p>
+               ) : (
+                 Object.keys(chats).map(userId => (
+                   <div key={userId} style={{ borderBottom: '1px solid #eee', padding: '15px 0' }}>
+                     <p style={{ fontWeight: 'bold' }}>{userId}</p>
+                     <p style={{ fontSize: '0.9rem', color: '#666' }}>{chats[userId][chats[userId].length - 1]?.text}</p>
+                   </div>
+                 ))
+               )}
+            </div>
           )}
         </div>
-
-        <form onSubmit={handleSendChat} style={{ display: 'flex', gap: '1rem' }}>
-          <input 
-            type="text" 
-            placeholder="Balas pesan..." 
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            disabled={!selectedUser}
-            className="form-input"
-          />
-          <button type="submit" className="btn btn-primary" disabled={!selectedUser || !chatInput.trim()} style={{ padding: '0 1.5rem' }}>
-            <Send size={20} />
-          </button>
-        </form>
       </div>
     </div>
   );
