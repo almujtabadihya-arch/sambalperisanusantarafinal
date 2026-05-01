@@ -1,46 +1,55 @@
-import React, { useContext } from 'react';
-import { ShoppingBag, User, LogOut, Menu } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useContext } from 'react';
+import { ShoppingCart, User, Menu, X, Search, Package } from 'lucide-react';
 import { AppContext } from '../App';
-import logoImg from '../assets/Sastramiharja.png';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Navbar() {
   const { cart, setIsCartOpen, user, logout } = useContext(AppContext);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  const cartItemsCount = cart.reduce((acc, item) => acc + item.qty, 0);
-  const hasOrders = JSON.parse(localStorage.getItem('mySambalOrders') || '[]').length > 0;
+  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
     <nav className="navbar">
       <div className="container navbar-container">
-        <div className="navbar-brand" onClick={() => navigate('/')}>
-          <img src={logoImg} alt="Logo" />
-          <span>Perisa Nusantara</span>
-        </div>
-        
+        {/* LOGO SULTAN */}
+        <Link to="/" className="navbar-brand">
+          <img src="/src/assets/logo.png" alt="Logo" style={{ height: '45px' }} onError={(e) => e.target.src = 'https://via.placeholder.com/45?text=SP'} />
+          <span>PERISA NUSANTARA</span>
+        </Link>
+
+        {/* ACTIONS */}
         <div className="navbar-actions">
+          {/* Tombol Lacak Pesanan (Garis Tiga yang lu mau) */}
+          <button 
+            className="btn btn-outline" 
+            style={{ padding: '8px', border: 'none' }}
+            onClick={() => navigate('/track-order')}
+            title="Lacak Pesanan"
+          >
+            <Menu size={28} color="black" />
+          </button>
+
+          <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setIsCartOpen(true)}>
+            <ShoppingCart size={24} />
+            {cartCount > 0 && (
+              <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: 'var(--primary)', color: 'white', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '50%', fontWeight: 'bold' }}>
+                {cartCount}
+              </span>
+            )}
+          </div>
+
           {user ? (
-            <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-              <span style={{fontWeight: 600}}>Hai, {user.name}</span>
-              <button className="btn btn-outline" style={{padding: '0.4rem 1rem', fontSize: '0.8rem'}} onClick={logout}>
-                <LogOut size={16} /> Keluar
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{user.name}</span>
+              <button onClick={logout} className="btn btn-outline" style={{ padding: '5px 12px', fontSize: '0.8rem' }}>Keluar</button>
             </div>
           ) : (
-            <button className="btn btn-primary" style={{padding: '0.5rem 1.2rem', fontSize: '0.9rem'}} onClick={() => navigate('/auth')}>
-              <User size={18} /> Masuk / Daftar
-            </button>
+            <Link to="/auth" className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.9rem' }}>
+              <User size={18} style={{ marginRight: '8px' }} /> Masuk
+            </Link>
           )}
-
-          <div className="cart-icon" onClick={() => navigate('/lacak')} style={{marginRight: '0.5rem', position: 'relative'}} title="Lacak Pesanan">
-            <Menu size={28} />
-            {hasOrders && <span style={{ position: 'absolute', top: 0, right: 0, background: 'red', width: '10px', height: '10px', borderRadius: '50%', border: '2px solid var(--primary-orange)' }}></span>}
-          </div>
-          <div className="cart-icon" onClick={() => setIsCartOpen(true)}>
-            <ShoppingBag size={28} />
-            {cartItemsCount > 0 && <span className="cart-badge">{cartItemsCount}</span>}
-          </div>
         </div>
       </div>
     </nav>
