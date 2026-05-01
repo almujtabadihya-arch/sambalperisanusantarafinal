@@ -25,8 +25,14 @@ app.use(async (req, res, next) => {
 
 // -- Models --
 const getOrderModel = () => mongoose.models.Order || mongoose.model('Order', new mongoose.Schema({
-  id: String, orderId: String, customer: Object, items: Array, totalAmount: Number, status: { type: String, default: 'Menunggu Pembayaran' }, 
-  date: { type: Date, default: Date.now }, history: { type: Array, default: [] }
+  id: String, 
+  orderId: String, 
+  customer: Object, 
+  items: Array, 
+  totalAmount: Number, 
+  status: { type: String, default: 'Menunggu Pembayaran' }, 
+  date: { type: Date, default: Date.now }, 
+  history: { type: Array, default: [] }
 }));
 
 const getMessageModel = () => mongoose.models.Message || mongoose.model('Message', new mongoose.Schema({
@@ -87,6 +93,21 @@ app.post('/api/orders', async (req, res) => {
 
 app.get('/api/orders', async (req, res) => {
   try { res.json(await getOrderModel().find().sort({ date: -1 })); } catch (err) { res.json([]); }
+});
+
+// FIX: Pintu Update Status di Vercel
+app.put('/api/orders/:id', async (req, res) => {
+  try {
+    const Order = getOrderModel();
+    const { status, notes } = req.body;
+    const order = await Order.findOne({ id: req.params.id });
+    if (!order) return res.status(404).json({ error: 'Gak ketemu' });
+
+    order.status = status;
+    order.history.push({ status, date: new Date(), notes: notes || `Status jadi ${status}` });
+    await order.save();
+    res.json(order);
+  } catch (err) { res.status(500).json({ error: 'Gagal update' }); }
 });
 
 app.post('/api/messages', async (req, res) => {
