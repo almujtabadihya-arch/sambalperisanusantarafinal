@@ -2,9 +2,9 @@ import React, { useState, useContext } from 'react';
 import { ShoppingCart, ArrowRight } from 'lucide-react';
 import { AppContext } from '../App';
 
-import cumiImg from '../assets/tongkol_ngokol.png'; // File ini isinya gambar Cumi
-import tongkolImg from '../assets/ayam_suwir.png';   // File ini isinya gambar Tongkol
-import ayamImg from '../assets/cumi_umami.png';     // File ini isinya gambar Ayam
+import cumiImg from '../assets/cumi_asli.png';
+import tongkolImg from '../assets/tongkol_asli.png';
+import ayamImg from '../assets/ayam_asli.png';
 
 const products = [
   { id: 1, name: 'Sambal Cumi Umami', theme: 'theme-cumi', price: 25000, volume: '150ml', image: cumiImg, description: 'Sensasi umami cumi kenyal dipadu pedas nampol.' },
