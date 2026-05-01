@@ -95,12 +95,16 @@ app.get('/api/orders', async (req, res) => {
   try { res.json(await getOrderModel().find().sort({ date: -1 })); } catch (err) { res.json([]); }
 });
 
-// FIX: Pintu Update Status di Vercel
 app.put('/api/orders/:id', async (req, res) => {
   try {
     const Order = getOrderModel();
     const { status, notes } = req.body;
-    const order = await Order.findOne({ id: req.params.id });
+    
+    // CARI PAKE ID SULTAN ATAU ID MONGODB (Anti-Gagal)
+    const order = await Order.findOne({ 
+      $or: [{ id: req.params.id }, { orderId: req.params.id }] 
+    });
+    
     if (!order) return res.status(404).json({ error: 'Gak ketemu' });
 
     order.status = status;
