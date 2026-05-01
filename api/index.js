@@ -127,6 +127,13 @@ app.get('/api/messages/:userId', async (req, res) => {
   try { res.json(await getMessageModel().find({ userId: req.params.userId })); } catch (err) { res.json([]); }
 });
 
+app.delete('/api/messages/:id', async (req, res) => {
+  try {
+    await getMessageModel().findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: 'Gagal hapus' }); }
+});
+
 app.get('/api/messages/admin/list', async (req, res) => {
   try {
     const messages = await getMessageModel().find().sort({ timestamp: 1 });
