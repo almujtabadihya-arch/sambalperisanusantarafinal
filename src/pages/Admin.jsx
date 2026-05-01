@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingBag, MessageSquare, Clock, Package, CheckCircle, Truck, AlertCircle, LogOut } from 'lucide-react';
 
 export default function Admin() {
-  // FIX ANTI-KEDIP: Ambil status login LANGSUNG pas awal banget
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return localStorage.getItem('adminToken') === 'true';
   });
@@ -28,6 +27,7 @@ export default function Admin() {
   const fetchOrders = async () => {
     try {
       const res = await fetch('/api/orders');
+      if (!res.ok) throw new Error('Fail');
       const data = await res.json();
       if (Array.isArray(data)) setOrders(data);
     } catch (err) {}
@@ -36,6 +36,7 @@ export default function Admin() {
   const fetchChats = async () => {
     try {
       const res = await fetch('/api/messages/admin/list');
+      if (!res.ok) throw new Error('Fail');
       const data = await res.json();
       if (data && typeof data === 'object') setChats(data);
     } catch (err) {}
@@ -134,7 +135,7 @@ export default function Admin() {
                       </div>
                       <div>
                         <p style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#888', marginBottom: '5px' }}>DETAIL PESANAN:</p>
-                        {order.items?.map((item, i) => (
+                        {Array.isArray(order.items) && order.items.map((item, i) => (
                           <div key={i} style={{ fontSize: '0.9rem' }}>{item.name} x {item.quantity}</div>
                         ))}
                         <p style={{ fontWeight: '900', marginTop: '10px', fontSize: '1.1rem' }}>Total: Rp {order.totalAmount?.toLocaleString()}</p>
@@ -152,16 +153,23 @@ export default function Admin() {
             </div>
           ) : (
             <div style={{ background: 'white', padding: '20px', borderRadius: '20px', minHeight: '400px' }}>
-               <h2 style={{ marginBottom: '20px' }}>Live Chat Admin</h2>
+               <h2 style={{ marginBottom: '20px', fontWeight: '900' }}>Live Chat Admin</h2>
                {Object.keys(chats).length === 0 ? (
                  <p style={{ color: '#888' }}>Belum ada chat masuk.</p>
                ) : (
-                 Object.keys(chats).map(userId => (
-                   <div key={userId} style={{ borderBottom: '1px solid #eee', padding: '15px 0' }}>
-                     <p style={{ fontWeight: 'bold' }}>{userId}</p>
-                     <p style={{ fontSize: '0.9rem', color: '#666' }}>{chats[userId][chats[userId].length - 1]?.text}</p>
-                   </div>
-                 ))
+                 Object.keys(chats).map(userId => {
+                   const userMessages = chats[userId];
+                   if (!Array.isArray(userMessages) || userMessages.length === 0) return null;
+                   const lastMsg = userMessages[userMessages.length - 1];
+                   
+                   return (
+                     <div key={userId} style={{ borderBottom: '1px solid #eee', padding: '15px 0' }}>
+                       <p style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{userId}</p>
+                       <p style={{ fontSize: '0.95rem', color: '#444', marginTop: '5px' }}>{lastMsg?.text || 'Pesan gambar/file'}</p>
+                       <p style={{ fontSize: '0.7rem', color: '#aaa' }}>{new Date(lastMsg?.timestamp).toLocaleString()}</p>
+                     </div>
+                   );
+                 })
                )}
             </div>
           )}
