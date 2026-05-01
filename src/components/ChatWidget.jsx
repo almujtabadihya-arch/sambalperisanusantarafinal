@@ -7,7 +7,9 @@ export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
   const scrollRef = useRef(null);
+  const previousMessagesLength = useRef(0);
   
   const [tempId] = useState('user-' + Math.random().toString(36).substring(2, 9));
   const currentUserId = user?.email || tempId;
@@ -19,6 +21,15 @@ export default function ChatWidget() {
         const res = await fetch(`/api/messages/${currentUserId}`);
         const data = await res.json();
         if (Array.isArray(data)) {
+          if (!isOpen && data.length > previousMessagesLength.current) {
+            // Cuma nambah unread kalau itu pesan dari admin (bukan pesan user sendiri)
+            const newMessages = data.slice(previousMessagesLength.current);
+            const adminReplies = newMessages.filter(m => m.sender === 'admin');
+            if (adminReplies.length > 0) {
+              setUnreadCount(prev => prev + adminReplies.length);
+            }
+          }
+          previousMessagesLength.current = data.length;
           setMessages(data);
         }
       } catch (err) {}
@@ -27,10 +38,11 @@ export default function ChatWidget() {
     fetchMessages(); // Ambil pertama kali
     const interval = setInterval(fetchMessages, 3000); // Cek tiap 3 detik
     return () => clearInterval(interval);
-  }, [currentUserId]);
+  }, [currentUserId, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
+        setUnreadCount(0); // Reset notif pas dibuka
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen]);
@@ -62,10 +74,18 @@ export default function ChatWidget() {
   };
 
   return (
-    <div className="chat-widget-container">
+    <div className="chat-widget-container" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
       {!isOpen && (
-        <button className="chat-toggle-btn" onClick={() => setIsOpen(true)}>
+        <button 
+          onClick={() => setIsOpen(true)}
+          style={{ background: '#000', color: 'white', border: 'none', borderRadius: '50%', width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 5px 15px rgba(0,0,0,0.2)', position: 'relative' }}
+        >
           <MessageCircle size={28} />
+          {unreadCount > 0 && (
+            <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#D32F2F', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', border: '2px solid white' }}>
+              {unreadCount}
+            </span>
+          )}
         </button>
       )}
 
