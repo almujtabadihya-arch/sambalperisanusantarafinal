@@ -1,77 +1,98 @@
 import React, { useState, useContext } from 'react';
-import { ShoppingCart, ArrowRight } from 'lucide-react';
 import { AppContext } from '../App';
-
-import cumiImg from '../assets/cumi_asli.png';
-import tongkolImg from '../assets/tongkol_asli.png';
-import ayamImg from '../assets/ayam_asli.png';
-
-const products = [
-  { id: 1, name: 'Sambal Cumi Umami', theme: 'theme-cumi', price: 25000, volume: '150ml', image: cumiImg, description: 'Sensasi umami cumi kenyal dipadu pedas nampol.' },
-  { id: 2, name: 'Sambal Tongkol Ngokol', theme: 'theme-tongkol', price: 25000, volume: '150ml', image: tongkolImg, description: 'Ikan tongkol segar yang melimpah di setiap suapan.' },
-  { id: 3, name: 'Sambal Ayam Suwir', theme: 'theme-ayam', price: 25000, volume: '150ml', image: ayamImg, description: 'Suwiran ayam melimpah dengan bumbu meresap sempurna.' }
-];
+import { Package, Flame, ShoppingCart, Info } from 'lucide-react';
 
 export default function Home() {
   const { addToCart } = useContext(AppContext);
-  const [selected, setSelected] = useState(null);
+  
+  const products = [
+    { 
+      id: 1, 
+      name: 'Sambal Cumi Ciamik', 
+      price: 25000, 
+      img: '/src/assets/cumi_asli.png',
+      desc: 'Potongan cumi segar yang melimpah dengan racikan cabai pilihan. Gurih, pedas, dan bikin nagih!',
+      weight: '150g',
+      level: 3
+    },
+    { 
+      id: 2, 
+      name: 'Sambal Tongkol Ngokol', 
+      price: 25000, 
+      img: '/src/assets/tongkol_asli.png',
+      desc: 'Ikan tongkol suwir asap yang harum berpadu dengan pedasnya sambal nusantara. Juara di lidah!',
+      weight: '150g',
+      level: 4
+    },
+    { 
+      id: 3, 
+      name: 'Sambal Ayam Suwir', 
+      price: 25000, 
+      img: '/src/assets/ayam_asli.png',
+      desc: 'Ayam suwir bumbu rempah dengan tingkat kepedasan yang pas. Cocok untuk teman nasi hangat!',
+      weight: '150g',
+      level: 2
+    }
+  ];
 
   return (
-    <div className="home-page">
-      {/* Hero */}
-      <section className="hero-section" style={{ padding: '60px 0' }}>
+    <div className="home-container">
+      {/* HERO SECTION PREMIUM */}
+      <section className="hero-section container">
         <div className="hero-content">
-          <h1 className="hero-title">Sambal Premium<br/>Asli <span style={{ color: 'var(--primary)' }}>Nusantara.</span></h1>
-          <p className="hero-subtitle">Nikmati kemewahan rasa dalam setiap suapan. Tanpa pengawet, 100% bahan segar.</p>
-          <button className="btn btn-primary" onClick={() => document.getElementById('products').scrollIntoView({ behavior: 'smooth' })}>
-            BELI SEKARANG <ArrowRight size={20} />
-          </button>
+          <h1 className="hero-title">RASAKAN SENSASI <span style={{ color: 'var(--primary)' }}>PEDAS SULTAN</span></h1>
+          <p style={{ fontSize: '1.1rem', color: '#555', marginBottom: '2rem' }}>
+            Dibuat dengan bahan premium 100% segar, tanpa pengawet, dan cinta yang tulus dari dapur nusantara.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <a href="#products" className="btn btn-primary">BELI SEKARANG</a>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#888', fontSize: '0.9rem' }}>
+              <span>⭐ 4.9/5 (2,000+ Ulasan)</span>
+            </div>
+          </div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <img src={products[0].image} alt="Hero" style={{ width: '80%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.15))' }} />
+        <div className="hero-image" style={{ textAlign: 'right' }}>
+           <img src="/src/assets/cumi_asli.png" alt="Hero" style={{ width: '80%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.2))' }} />
         </div>
       </section>
 
-      {/* Products */}
-      <section id="products" style={{ padding: '40px 0' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '3rem', fontWeight: '900' }}>Produk Kami</h2>
-          <p style={{ color: '#666' }}>Pilih varian favoritmu.</p>
-        </div>
+      {/* PRODUCTS SECTION */}
+      <section id="products" className="container" style={{ padding: '4rem 0' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '3rem', fontWeight: '900', fontSize: '2.5rem' }}>PRODUK UNGGULAN KAMI</h2>
         <div className="products-grid">
           {products.map(p => (
-            <div key={p.id} className="product-card-premium" style={{ border: '1px solid #EEE' }}>
-              <div style={{ background: '#F9F9F9', borderRadius: '20px', padding: '1.5rem', marginBottom: '1rem' }}>
-                <img src={p.image} alt={p.name} onClick={() => setSelected(p)} style={{ cursor: 'pointer', width: '100%' }} />
+            <div key={p.id} className="product-card-premium">
+              <div style={{ position: 'relative' }}>
+                <img src={p.img} alt={p.name} />
+                <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(255,255,255,0.9)', padding: '5px 12px', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Package size={14} /> {p.weight}
+                </div>
               </div>
-              <h3>{p.name}</h3>
-              <p style={{ color: '#666', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{p.description}</p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--primary)' }}>Rp 25.000</span>
-                <button className="btn btn-primary" style={{ padding: '0.8rem' }} onClick={() => addToCart(p)}>
-                  <ShoppingCart size={20} />
+              
+              <h3 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '5px' }}>{p.name}</h3>
+              
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginBottom: '15px' }}>
+                {[...Array(5)].map((_, i) => (
+                  <Flame key={i} size={16} color={i < p.level ? 'var(--primary)' : '#EEE'} fill={i < p.level ? 'var(--primary)' : '#EEE'} />
+                ))}
+              </div>
+
+              <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '20px', minHeight: '60px' }}>{p.desc}</p>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #EEE', paddingTop: '15px' }}>
+                <span style={{ fontSize: '1.5rem', fontWeight: '900' }}>Rp {p.price.toLocaleString()}</span>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+                  onClick={() => addToCart(p)}
+                >
+                  <ShoppingCart size={18} style={{ marginRight: '8px' }} /> AMBIL
                 </button>
               </div>
             </div>
           ))}
         </div>
       </section>
-
-      {/* Detail Modal */}
-      {selected && (
-        <div className="modal-overlay" onClick={() => setSelected(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'white' }}>
-            <img src={selected.image} alt={selected.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ padding: '30px' }}>
-              <h2 style={{ fontSize: '2.5rem', fontWeight: '900' }}>{selected.name}</h2>
-              <p style={{ color: '#666', margin: '20px 0' }}>{selected.description}</p>
-              <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => { addToCart(selected); setSelected(null); }}>
-                TAMBAH KE KERANJANG
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
