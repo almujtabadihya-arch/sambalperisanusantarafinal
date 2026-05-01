@@ -14,7 +14,7 @@ export default function OrderTracking() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/orders');
+      const res = await fetch('/api/orders?t=' + Date.now());
       const data = await res.json();
       // Cari orderId yang cocok (bisa case-insensitive)
       const found = data.find(o => o.orderId.toUpperCase() === orderId.trim().toUpperCase());
