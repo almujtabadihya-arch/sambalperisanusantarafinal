@@ -25,8 +25,14 @@ app.use(async (req, res, next) => {
 
 // -- Models --
 const getOrderModel = () => mongoose.models.Order || mongoose.model('Order', new mongoose.Schema({
-  orderId: String, customer: Object, items: Array, totalAmount: Number, status: { type: String, default: 'Menunggu Pembayaran' }, 
-  date: { type: Date, default: Date.now }, history: { type: Array, default: [] }
+  id: String, // ID unik buat database
+  orderId: String, 
+  customer: Object, 
+  items: Array, 
+  totalAmount: Number, 
+  status: { type: String, default: 'Menunggu Pembayaran' }, 
+  date: { type: Date, default: Date.now }, 
+  history: { type: Array, default: [] }
 }));
 
 const getMessageModel = () => mongoose.models.Message || mongoose.model('Message', new mongoose.Schema({
@@ -43,26 +49,24 @@ app.post('/api/login', (req, res) => {
   }
 });
 
-app.post('/api/userlogin', (req, res) => {
-  res.json({ user: { name: req.body.email.split('@')[0], email: req.body.email } });
-});
-
-app.post('/api/register', (req, res) => {
-  res.json({ user: { name: req.body.name, email: req.body.email } });
-});
-
 app.post('/api/orders', async (req, res) => {
   try {
     const Order = getOrderModel();
     const shortId = 'PRSA-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const longId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 10000); // ID Unik Anti-Duplicate
+    
     const order = new Order({ 
       ...req.body, 
+      id: longId, // WAJIB ADA BIAR GAK ERROR DUP KEY
       orderId: shortId,
       history: [{ status: 'Menunggu Pembayaran', date: new Date(), notes: 'Pesanan diterima.' }] 
     });
     await order.save();
-    res.json({ id: order._id, orderId: shortId, ...order._doc });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    res.json({ id: longId, orderId: shortId, ...order._doc });
+  } catch (err) { 
+    console.error('Order Error:', err);
+    res.status(500).json({ error: err.message }); 
+  }
 });
 
 app.get('/api/orders', async (req, res) => {
@@ -82,7 +86,6 @@ app.get('/api/messages/:userId', async (req, res) => {
   try { res.json(await getMessageModel().find({ userId: req.params.userId })); } catch (err) { res.json([]); }
 });
 
-// Admin list chats
 app.get('/api/messages/admin/list', async (req, res) => {
   try {
     const messages = await getMessageModel().find().sort({ timestamp: 1 });
