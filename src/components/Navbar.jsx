@@ -3,6 +3,9 @@ import { ShoppingCart, User, Menu } from 'lucide-react';
 import { AppContext } from '../App';
 import { Link } from 'react-router-dom';
 
+// IMPORT LOGO SULTAN (Cara Paling Aman)
+import logoImg from '../assets/Sastramiharja.png';
+
 export default function Navbar() {
   const { cart, setIsCartOpen, user, logout } = useContext(AppContext);
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -13,8 +16,8 @@ export default function Navbar() {
         
         {/* LOGO & TULISAN (FIX) */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-          <span style={{ fontSize: '2rem' }}>🌶️</span>
-          <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#D32F2F', letterSpacing: '1px' }}>SAMBAL PERISA</span>
+          <img src={logoImg} alt="Logo" style={{ height: '45px', width: 'auto' }} />
+          <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#D32F2F', letterSpacing: '1px' }}>PERISA NUSANTARA</span>
         </Link>
 
         {/* ACTIONS */}
