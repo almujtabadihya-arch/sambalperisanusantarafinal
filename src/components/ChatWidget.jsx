@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { MessageCircle, Send, X, User } from 'lucide-react';
+import { MessageCircle, Send, X } from 'lucide-react';
 import { AppContext } from '../App';
 import { io } from 'socket.io-client';
 
-// Smart Connection: Otomatis deteksi jalur terbaik
 const SOCKET_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:5000' 
   : window.location.origin;
@@ -16,20 +15,21 @@ export default function ChatWidget() {
   const [socket, setSocket] = useState(null);
   const scrollRef = useRef(null);
 
-  // Pakai ID unik per session kalau belum login
   const [tempId] = useState('user-' + Math.random().toString(36).substring(2, 9));
   const currentUserId = user?.email || tempId;
 
   useEffect(() => {
-    const newSocket = io(SOCKET_URL);
+    const newSocket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
     setSocket(newSocket);
 
     newSocket.emit('join_chat', currentUserId);
 
-    // Ambil history chat lama
+    // Ambil history chat
     fetch(`${SOCKET_URL}/api/messages/${currentUserId}`)
       .then(res => res.json())
-      .then(data => setMessages(data))
+      .then(data => {
+        if (Array.isArray(data)) setMessages(data);
+      })
       .catch(() => {});
 
     newSocket.on('receive_message', (msg) => {
@@ -40,37 +40,48 @@ export default function ChatWidget() {
   }, [currentUserId]);
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isOpen) {
+        setTimeout(() => {
+            scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    }
   }, [messages, isOpen]);
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || !socket) return;
+    const text = input.trim();
+    if (!text) return;
 
     const msgData = {
       userId: currentUserId,
-      text: input.trim(),
+      text: text,
       sender: 'user',
       timestamp: new Date()
     };
 
-    socket.emit('send_message', msgData);
+    // TAMPILIN LANGSUNG (INSTAN)
     setMessages(prev => [...prev, msgData]);
     setInput('');
 
-    // Save to DB
+    // Kirim ke Socket
+    if (socket) {
+        socket.emit('send_message', msgData);
+    }
+
+    // Simpan ke DB
     try {
       await fetch(`${SOCKET_URL}/api/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(msgData)
       });
-    } catch (err) {}
+    } catch (err) {
+        console.error('Save chat error:', err);
+    }
   };
 
   return (
     <div className="chat-widget-container">
-      {/* Tombol Chat Sultan di Kanan Bawah */}
       {!isOpen && (
         <button className="chat-toggle-btn" onClick={() => setIsOpen(true)}>
           <MessageCircle size={28} />
@@ -84,7 +95,7 @@ export default function ChatWidget() {
               <div className="chat-avatar">SP</div>
               <div>
                 <div style={{ fontWeight: '800', fontSize: '0.9rem' }}>Admin Sambal Perisa</div>
-                <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Online • Siap Melayani</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Online</div>
               </div>
             </div>
             <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
@@ -92,14 +103,16 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          <div className="chat-messages">
-            {messages.length === 0 && (
-              <div style={{ textAlign: 'center', marginTop: '20px', color: '#888', fontSize: '0.8rem' }}>
-                Halo! Ada yang bisa kami bantu?
-              </div>
-            )}
+          <div className="chat-messages" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {messages.map((m, i) => (
-              <div key={i} className={`chat-bubble ${m.sender === 'user' ? 'user' : 'admin'}`}>
+              <div key={i} className={`chat-bubble ${m.sender === 'user' ? 'user' : 'admin'}`} 
+                   style={{ 
+                     alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
+                     background: m.sender === 'user' ? 'var(--primary)' : 'white',
+                     color: m.sender === 'user' ? 'white' : 'black',
+                     padding: '8px 12px', borderRadius: '15px', maxWidth: '80%',
+                     boxShadow: '0 2px 5px rgba(0,0,0,0.05)', fontSize: '0.9rem'
+                   }}>
                 {m.text}
               </div>
             ))}
@@ -112,9 +125,10 @@ export default function ChatWidget() {
               placeholder="Tulis pesan..." 
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              style={{ width: '100%', border: 'none', outline: 'none', padding: '10px' }}
             />
-            <button type="submit">
-              <Send size={18} />
+            <button type="submit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}>
+              <Send size={20} />
             </button>
           </form>
         </div>
