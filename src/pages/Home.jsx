@@ -72,12 +72,6 @@ export default function Home() {
               </div>
               
               <h3 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '8px' }}>{p.name}</h3>
-              
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '15px' }}>
-                {[...Array(5)].map((_, i) => (
-                  <Flame key={i} size={18} color={i < p.level ? '#D32F2F' : '#EEE'} fill={i < p.level ? '#D32F2F' : '#EEE'} />
-                ))}
-              </div>
 
               <p style={{ fontSize: '0.95rem', color: '#666', marginBottom: '25px', lineHeight: 1.5, minHeight: '60px' }}>{p.desc}</p>
               
