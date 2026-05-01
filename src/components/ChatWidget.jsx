@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { MessageCircle, Send, X } from 'lucide-react';
+import { MessageCircle, Send, X, Trash2 } from 'lucide-react';
 import { AppContext } from '../App';
 
 export default function ChatWidget() {
@@ -73,6 +73,14 @@ export default function ChatWidget() {
     } catch (err) {}
   };
 
+  const deleteMessage = async (msgId) => {
+    if (!msgId) return; // Kalau pesannya belum dapet ID dari server, gak bisa dihapus dulu
+    setMessages(prev => prev.filter(m => m._id !== msgId));
+    try {
+      await fetch(`/api/messages/${msgId}`, { method: 'DELETE' });
+    } catch (err) {}
+  };
+
   return (
     <div className="chat-widget-container" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
       {!isOpen && (
@@ -90,8 +98,8 @@ export default function ChatWidget() {
       )}
 
       {isOpen && (
-        <div className="chat-window-premium">
-          <div className="chat-header">
+        <div className="chat-window-premium" style={{ position: 'absolute', bottom: '80px', right: '0', width: '320px', height: '450px', maxHeight: '60vh', display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
+          <div className="chat-header" style={{ background: '#000', color: 'white', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div className="chat-avatar">SP</div>
               <div>
@@ -104,18 +112,24 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          <div className="chat-messages" style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '15px' }}>
+          <div className="chat-messages" style={{ flex: 1, overflowY: 'auto', padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', background: '#FAFAFA' }}>
             {messages.map((m, i) => (
-              <div key={i} className={`chat-bubble ${m.sender === 'user' ? 'user' : 'admin'}`} 
-                   style={{ 
-                     alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
-                     background: m.sender === 'user' ? 'var(--primary)' : 'white',
-                     color: m.sender === 'user' ? 'white' : 'black',
-                     padding: '10px 15px', borderRadius: '18px', maxWidth: '85%',
-                     boxShadow: '0 3px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem',
-                     wordBreak: 'break-word'
-                   }}>
-                {m.text}
+              <div key={i} style={{ alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                {m.sender === 'user' && m._id && (
+                  <button onClick={() => deleteMessage(m._id)} style={{ background: 'none', border: 'none', color: '#CCC', cursor: 'pointer', padding: '5px' }} title="Hapus pesan">
+                    <Trash2 size={14} />
+                  </button>
+                )}
+                <div className={`chat-bubble ${m.sender === 'user' ? 'user' : 'admin'}`} 
+                     style={{ 
+                       background: m.sender === 'user' ? '#000' : 'white',
+                       color: m.sender === 'user' ? 'white' : 'black',
+                       padding: '10px 15px', borderRadius: '18px', maxWidth: '100%',
+                       boxShadow: '0 3px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem',
+                       wordBreak: 'break-word', borderBottomRightRadius: m.sender === 'user' ? '5px' : '18px', borderBottomLeftRadius: m.sender === 'admin' ? '5px' : '18px'
+                     }}>
+                  {m.text}
+                </div>
               </div>
             ))}
             <div ref={scrollRef} />
