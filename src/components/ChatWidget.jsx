@@ -1,121 +1,124 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, X, MessageSquare } from 'lucide-react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { MessageCircle, Send, X, User } from 'lucide-react';
+import { AppContext } from '../App';
 import { io } from 'socket.io-client';
 
-// Connect to local server
-const socket = io('http://localhost:5000');
+// Smart Connection: Otomatis deteksi jalur terbaik
+const SOCKET_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:5000' 
+  : window.location.origin;
 
 export default function ChatWidget() {
+  const { user } = useContext(AppContext);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [userId] = useState(() => {
-    let uid = localStorage.getItem('chatUserId');
-    if (!uid) {
-      uid = 'USER-' + Math.floor(Math.random() * 1000000);
-      localStorage.setItem('chatUserId', uid);
-    }
-    return uid;
-  });
+  const [socket, setSocket] = useState(null);
+  const scrollRef = useRef(null);
 
-  const messagesEndRef = useRef(null);
+  // Pakai ID unik per session kalau belum login
+  const [tempId] = useState('user-' + Math.random().toString(36).substring(2, 9));
+  const currentUserId = user?.email || tempId;
 
   useEffect(() => {
-    // Join private room
-    socket.emit('join_chat', userId);
+    const newSocket = io(SOCKET_URL);
+    setSocket(newSocket);
 
-    // Load history
-    socket.on('chat_history', (history) => {
-      setMessages(history);
+    newSocket.emit('join_chat', currentUserId);
+
+    // Ambil history chat lama
+    fetch(`${SOCKET_URL}/api/messages/${currentUserId}`)
+      .then(res => res.json())
+      .then(data => setMessages(data))
+      .catch(() => {});
+
+    newSocket.on('receive_message', (msg) => {
+      setMessages(prev => [...prev, msg]);
     });
 
-    // Receive message
-    socket.on('receive_message', (msg) => {
-      setMessages((prev) => [...prev, msg]);
-      if (!isOpen) {
-        setUnreadCount((prev) => prev + 1);
-      }
-    });
-
-    return () => {
-      socket.off('chat_history');
-      socket.off('receive_message');
-    };
-  }, [userId, isOpen]);
+    return () => newSocket.disconnect();
+  }, [currentUserId]);
 
   useEffect(() => {
-    if (isOpen) {
-      setUnreadCount(0);
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [isOpen, messages]);
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isOpen]);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !socket) return;
 
-    const data = {
-      userId,
+    const msgData = {
+      userId: currentUserId,
       text: input.trim(),
-      sender: 'user'
+      sender: 'user',
+      timestamp: new Date()
     };
 
-    socket.emit('send_message', data);
+    socket.emit('send_message', msgData);
+    setMessages(prev => [...prev, msgData]);
     setInput('');
+
+    // Save to DB
+    try {
+      await fetch(`${SOCKET_URL}/api/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(msgData)
+      });
+    } catch (err) {}
   };
 
   return (
-    <div className="chat-widget">
-      {/* Floating Button */}
+    <div className="chat-widget-container">
+      {/* Tombol Chat Sultan di Kanan Bawah */}
       {!isOpen && (
-        <button className="chat-btn" onClick={() => setIsOpen(true)}>
-          <MessageSquare size={32} />
-          {unreadCount > 0 && <span className="cart-badge" style={{top: '-5px', right: '-5px'}}>{unreadCount}</span>}
+        <button className="chat-toggle-btn" onClick={() => setIsOpen(true)}>
+          <MessageCircle size={28} />
         </button>
       )}
 
-      {/* Chat Window */}
-      <div className={`chat-window ${isOpen ? 'open' : ''}`}>
-        <div className="chat-header">
-          <div style={{display: 'flex', alignItems: 'center', gap: '0.8rem'}}>
-            <div style={{width: '10px', height: '10px', background: '#4CAF50', borderRadius: '50%'}}></div>
-            <div>
-              <div style={{fontWeight: 800, fontSize: '0.9rem'}}>Admin Sambal</div>
-              <div style={{fontSize: '0.7rem', opacity: 0.8}}>Online</div>
+      {isOpen && (
+        <div className="chat-window-premium">
+          <div className="chat-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="chat-avatar">SP</div>
+              <div>
+                <div style={{ fontWeight: '800', fontSize: '0.9rem' }}>Admin Sambal Perisa</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Online • Siap Melayani</div>
+              </div>
             </div>
+            <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+              <X size={20} />
+            </button>
           </div>
-          <button style={{background:'none', border:'none', color:'white', cursor:'pointer'}} onClick={() => setIsOpen(false)}>
-            <X size={20} />
-          </button>
-        </div>
 
-        <div className="chat-body">
-          {messages.length === 0 && (
-            <div style={{textAlign: 'center', color: '#999', marginTop: '2rem', fontSize: '0.8rem'}}>
-              Halo! Ada yang bisa kami bantu seputar Sambal Perisa? 🌶️
-            </div>
-          )}
-          {messages.map((msg, i) => (
-            <div key={i} className={`chat-message ${msg.sender === 'admin' ? 'msg-seller' : 'msg-user'}`}>
-              {msg.text}
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+          <div className="chat-messages">
+            {messages.length === 0 && (
+              <div style={{ textAlign: 'center', marginTop: '20px', color: '#888', fontSize: '0.8rem' }}>
+                Halo! Ada yang bisa kami bantu?
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} className={`chat-bubble ${m.sender === 'user' ? 'user' : 'admin'}`}>
+                {m.text}
+              </div>
+            ))}
+            <div ref={scrollRef} />
+          </div>
 
-        <form className="chat-input-area" onSubmit={handleSend}>
-          <input 
-            type="text" 
-            placeholder="Ketik pesan..." 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button type="submit" disabled={!input.trim()}>
-            <Send size={18} />
-          </button>
-        </form>
-      </div>
+          <form onSubmit={handleSend} className="chat-input-area">
+            <input 
+              type="text" 
+              placeholder="Tulis pesan..." 
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+            />
+            <button type="submit">
+              <Send size={18} />
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
