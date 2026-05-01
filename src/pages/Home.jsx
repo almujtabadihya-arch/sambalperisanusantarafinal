@@ -17,7 +17,7 @@ export default function Home() {
       price: 25000, 
       img: cumiImg,
       desc: 'Potongan cumi segar yang melimpah dengan racikan cabai pilihan. Gurih, pedas, dan bikin nagih!',
-      weight: '150g',
+      weight: '150ml',
       level: 3
     },
     { 
@@ -26,7 +26,7 @@ export default function Home() {
       price: 25000, 
       img: tongkolImg,
       desc: 'Ikan tongkol suwir asap yang harum berpadu dengan pedasnya sambal nusantara. Juara di lidah!',
-      weight: '150g',
+      weight: '150ml',
       level: 4
     },
     { 
@@ -35,7 +35,7 @@ export default function Home() {
       price: 25000, 
       img: ayamImg,
       desc: 'Ayam suwir bumbu rempah dengan tingkat kepedasan yang pas. Cocok untuk teman nasi hangat!',
-      weight: '150g',
+      weight: '150ml',
       level: 2
     }
   ];
