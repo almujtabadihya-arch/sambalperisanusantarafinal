@@ -25,18 +25,16 @@ app.use(async (req, res, next) => {
 
 // -- Models --
 const getOrderModel = () => mongoose.models.Order || mongoose.model('Order', new mongoose.Schema({
-  id: String, // ID unik buat database
-  orderId: String, 
-  customer: Object, 
-  items: Array, 
-  totalAmount: Number, 
-  status: { type: String, default: 'Menunggu Pembayaran' }, 
-  date: { type: Date, default: Date.now }, 
-  history: { type: Array, default: [] }
+  id: String, orderId: String, customer: Object, items: Array, totalAmount: Number, status: { type: String, default: 'Menunggu Pembayaran' }, 
+  date: { type: Date, default: Date.now }, history: { type: Array, default: [] }
 }));
 
 const getMessageModel = () => mongoose.models.Message || mongoose.model('Message', new mongoose.Schema({
   userId: String, text: String, sender: String, timestamp: { type: Date, default: Date.now }
+}));
+
+const getUserModel = () => mongoose.models.User || mongoose.model('User', new mongoose.Schema({
+  name: String, email: String, password: String
 }));
 
 // -- Endpoints --
@@ -49,24 +47,42 @@ app.post('/api/login', (req, res) => {
   }
 });
 
+app.post('/api/register', async (req, res) => {
+  try {
+    const User = getUserModel();
+    const newUser = new User(req.body);
+    await newUser.save();
+    res.json({ user: { name: newUser.name, email: newUser.email } });
+  } catch (err) { res.status(500).json({ error: 'Gagal daftar' }); }
+});
+
+app.post('/api/userlogin', async (req, res) => {
+  try {
+    const User = getUserModel();
+    const { email, password } = req.body;
+    const user = await User.findOne({ email, password });
+    if (user) {
+        res.json({ user: { name: user.name, email: user.email } });
+    } else {
+        res.status(401).json({ error: 'Email atau password salah!' });
+    }
+  } catch (err) { res.status(500).json({ error: 'Gagal login' }); }
+});
+
 app.post('/api/orders', async (req, res) => {
   try {
     const Order = getOrderModel();
     const shortId = 'PRSA-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-    const longId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 10000); // ID Unik Anti-Duplicate
-    
+    const longId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
     const order = new Order({ 
       ...req.body, 
-      id: longId, // WAJIB ADA BIAR GAK ERROR DUP KEY
+      id: longId,
       orderId: shortId,
       history: [{ status: 'Menunggu Pembayaran', date: new Date(), notes: 'Pesanan diterima.' }] 
     });
     await order.save();
     res.json({ id: longId, orderId: shortId, ...order._doc });
-  } catch (err) { 
-    console.error('Order Error:', err);
-    res.status(500).json({ error: err.message }); 
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/orders', async (req, res) => {
