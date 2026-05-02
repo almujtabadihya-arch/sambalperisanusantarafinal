@@ -8,7 +8,7 @@ import logoImg from '../assets/Sastramiharja.png';
 
 export default function Navbar() {
   const { cart, setIsCartOpen, user, logout } = useContext(AppContext);
-  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const cartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
   return (
     <nav className="navbar" style={{ background: 'white', borderBottom: '1px solid #EEE', position: 'sticky', top: 0, zIndex: 1000 }}>
@@ -24,7 +24,7 @@ export default function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           
           {/* TOMBOL GARIS TIGA (Pake Link Langsung Biar Joss) */}
-          <Link to="/track-order" style={{ color: 'black', textDecoration: 'none' }}>
+          <Link to="/lacak" style={{ color: 'black', textDecoration: 'none' }}>
             <Menu size={32} />
           </Link>
 
