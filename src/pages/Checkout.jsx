@@ -33,6 +33,12 @@ export default function Checkout() {
       return;
     }
     
+    // Validasi Manual karena tombol di luar form
+    if (!formData.name || !formData.phone || !formData.address || !formData.postalCode) {
+      alert('Mohon lengkapi semua data pengiriman (Nama, WA, Kodepos, Alamat) ya kak!');
+      return;
+    }
+    
     try {
       const response = await fetch('/api/orders', {
         method: 'POST',
