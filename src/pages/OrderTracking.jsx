@@ -15,18 +15,24 @@ export default function OrderTracking() {
     setError('');
     try {
       const res = await fetch('/api/orders?t=' + Date.now());
-      const data = await res.json();
+      let data = [];
+      try { data = await res.json(); } catch(e) {}
+      if (!Array.isArray(data)) data = [];
+      
+      const localData = JSON.parse(localStorage.getItem('sultan_orders') || '[]');
+      const allData = [...localData, ...data];
+      
       // Cari orderId yang cocok (bisa case-insensitive)
-      const found = data.find(o => o.orderId.toUpperCase() === orderId.trim().toUpperCase());
+      const found = allData.find(o => o.orderId.toUpperCase() === orderId.trim().toUpperCase());
       
       if (found) {
         setOrder(found);
       } else {
-        setError('Nomor pesanan tidak ditemukan. Pastikan kodenya benar (Contoh: PRSA-XXXXXX)');
+        setError('Pesanan tidak ditemukan! Cek kembali ID pesanan Kakak.');
         setOrder(null);
       }
     } catch (err) {
-      setError('Gagal mengambil data. Coba lagi ya.');
+      setError('Sistem sedang sibuk. Coba beberapa saat lagi.');
     } finally {
       setLoading(false);
     }
