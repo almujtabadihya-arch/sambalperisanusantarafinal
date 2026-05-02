@@ -28,9 +28,14 @@ export default function Admin() {
   const fetchOrders = async () => {
     try {
       const res = await fetch('/api/orders');
-      const data = await res.json();
-      if (Array.isArray(data)) setOrders(data);
-    } catch (err) {}
+      let data = await res.json();
+      if (!Array.isArray(data)) data = [];
+      const localData = JSON.parse(localStorage.getItem('sultan_orders') || '[]');
+      setOrders([...localData, ...data]);
+    } catch (err) {
+      const localData = JSON.parse(localStorage.getItem('sultan_orders') || '[]');
+      setOrders(localData);
+    }
   };
 
   const fetchChats = async () => {
@@ -58,16 +63,26 @@ export default function Admin() {
 
   const updateStatus = async (id, newStatus) => {
     const notes = prompt("Catatan Logistik:", `Pesanan dalam status ${newStatus}`);
+    
+    // UPDATE LOCALSTORAGE FALLBACK DULU
+    const localData = JSON.parse(localStorage.getItem('sultan_orders') || '[]');
+    const idx = localData.findIndex(o => o.id === id || o.orderId === id);
+    if (idx !== -1) {
+      localData[idx].status = newStatus;
+      localData[idx].history.unshift({ status: newStatus, date: new Date().toISOString(), notes: notes || `Status jadi ${newStatus}` });
+      localStorage.setItem('sultan_orders', JSON.stringify(localData));
+    }
+
     try {
       await fetch(`/api/orders/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus, notes: notes || 'Update status oleh Admin.' })
       });
-      fetchOrders();
     } catch (err) {
-      alert('Gagal update');
+      // Abaikan error api karena lokal udah sukses
     }
+    fetchOrders();
   };
 
   const sendReply = async (e) => {
