@@ -9,6 +9,9 @@ app.use(express.json());
 const mongoURI = process.env.MONGO_URI;
 
 let isConnected = false;
+let fallbackOrders = [];
+let fallbackMessages = [];
+
 const connectDB = async () => {
   if (isConnected && mongoose.connection.readyState === 1) return;
   try {
@@ -77,66 +80,103 @@ app.post('/api/userlogin', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
   try {
-    const Order = getOrderModel();
     const shortId = 'PRSA-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     const longId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
-    const order = new Order({ 
+    const orderData = { 
       ...req.body, 
       id: longId,
       orderId: shortId,
+      date: new Date(),
+      status: 'Menunggu Pembayaran',
       history: [{ status: 'Menunggu Pembayaran', date: new Date(), notes: 'Pesanan diterima.' }] 
-    });
-    await order.save();
-    res.json({ id: longId, orderId: shortId, ...order._doc });
+    };
+
+    if (isConnected) {
+      const Order = getOrderModel();
+      const order = new Order(orderData);
+      await order.save();
+    } else {
+      fallbackOrders.push(orderData);
+    }
+    
+    res.json(orderData);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/orders', async (req, res) => {
-  try { res.json(await getOrderModel().find().sort({ date: -1 })); } catch (err) { res.json([]); }
+  try { 
+    if (isConnected) {
+      res.json(await getOrderModel().find().sort({ date: -1 })); 
+    } else {
+      res.json([...fallbackOrders].reverse());
+    }
+  } catch (err) { res.json([]); }
 });
 
 app.put('/api/orders/:id', async (req, res) => {
   try {
-    const Order = getOrderModel();
     const { status, notes } = req.body;
     
-    // CARI PAKE ID SULTAN ATAU ID MONGODB (Anti-Gagal)
-    const order = await Order.findOne({ 
-      $or: [{ id: req.params.id }, { orderId: req.params.id }] 
-    });
-    
-    if (!order) return res.status(404).json({ error: 'Gak ketemu' });
-
-    order.status = status;
-    order.history.push({ status, date: new Date(), notes: notes || `Status jadi ${status}` });
-    await order.save();
-    res.json(order);
+    if (isConnected) {
+      const Order = getOrderModel();
+      const order = await Order.findOne({ 
+        $or: [{ id: req.params.id }, { orderId: req.params.id }] 
+      });
+      if (!order) return res.status(404).json({ error: 'Gak ketemu' });
+      order.status = status;
+      order.history.push({ status, date: new Date(), notes: notes || `Status jadi ${status}` });
+      await order.save();
+      return res.json(order);
+    } else {
+      const orderIndex = fallbackOrders.findIndex(o => o.id === req.params.id || o.orderId === req.params.id);
+      if (orderIndex === -1) return res.status(404).json({ error: 'Gak ketemu' });
+      fallbackOrders[orderIndex].status = status;
+      fallbackOrders[orderIndex].history.push({ status, date: new Date(), notes: notes || `Status jadi ${status}` });
+      return res.json(fallbackOrders[orderIndex]);
+    }
   } catch (err) { res.status(500).json({ error: 'Gagal update' }); }
 });
 
 app.post('/api/messages', async (req, res) => {
   try {
-    const Message = getMessageModel();
-    const msg = new Message(req.body);
-    await msg.save();
-    res.json(msg);
+    const msgData = { ...req.body, timestamp: new Date() };
+    if (isConnected) {
+      const Message = getMessageModel();
+      const msg = new Message(msgData);
+      await msg.save();
+      res.json(msg);
+    } else {
+      msgData._id = 'msg-' + Date.now();
+      fallbackMessages.push(msgData);
+      res.json(msgData);
+    }
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/messages/:userId', async (req, res) => {
-  try { res.json(await getMessageModel().find({ userId: req.params.userId })); } catch (err) { res.json([]); }
+  try { 
+    if (isConnected) {
+      res.json(await getMessageModel().find({ userId: req.params.userId })); 
+    } else {
+      res.json(fallbackMessages.filter(m => m.userId === req.params.userId));
+    }
+  } catch (err) { res.json([]); }
 });
 
 app.delete('/api/messages/:id', async (req, res) => {
   try {
-    await getMessageModel().findByIdAndDelete(req.params.id);
+    if (isConnected) {
+      await getMessageModel().findByIdAndDelete(req.params.id);
+    } else {
+      fallbackMessages = fallbackMessages.filter(m => m._id !== req.params.id);
+    }
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: 'Gagal hapus' }); }
 });
 
 app.get('/api/messages/admin/list', async (req, res) => {
   try {
-    const messages = await getMessageModel().find().sort({ timestamp: 1 });
+    let messages = isConnected ? await getMessageModel().find().sort({ timestamp: 1 }) : fallbackMessages;
     const chats = {};
     messages.forEach(m => {
       if (!chats[m.userId]) chats[m.userId] = [];
