@@ -157,7 +157,7 @@ export default function Admin() {
                       <div>
                         <p style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#888' }}>DETAIL:</p>
                         {order.items?.map((item, i) => (
-                          <div key={i} style={{ fontSize: '0.9rem' }}>{item.name} x {item.quantity}</div>
+                          <div key={i} style={{ fontSize: '0.9rem' }}>{item.name} x {item.qty}</div>
                         ))}
                         <p style={{ fontWeight: '900', marginTop: '5px' }}>Total: Rp {order.totalAmount?.toLocaleString()}</p>
                       </div>
